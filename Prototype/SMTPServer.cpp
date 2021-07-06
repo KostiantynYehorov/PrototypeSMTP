@@ -20,13 +20,12 @@ void SMTPServer::AcceptConnections()
 		{
 			std::cout << "Accepted new connection. Now creating session thread...\n";
 
-			/*std::thread new_thread([&]() 
+			std::thread new_thread([&]() 
 				{
 					WorkWithClient(client_socket);
 				});
-			*/
 
-			WorkWithClient(client_socket);
+			new_thread.detach();
 		}
 	}
 }

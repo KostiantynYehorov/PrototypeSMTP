@@ -24,7 +24,7 @@ int MailSession::SendResponse(int ResponseType)
 
 	if (ResponseType == 220)
 	{
-		strcpy(buf, "220 %s Welcome to %s %s \r\n");
+		strcpy(buf, "220 Welcome! \r\n");
 	}
 
 	else if (ResponseType == 221)

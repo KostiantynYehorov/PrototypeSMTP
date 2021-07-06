@@ -13,9 +13,9 @@ public:
 	MailSession() = delete;
 	MailSession(SOCKET& client_socket);
 
-	int SendResponse(int ResponseType);
 	const SOCKET& GetSocket() const;
 
+	int SendResponse(int ResponseType);
 	int Processes(char* buf, int len);
 
 private:
