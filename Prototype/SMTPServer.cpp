@@ -11,7 +11,7 @@ void SMTPServer::AcceptConnections()
 
 		std::cout << "Waiting for incoming connection...\n";
 
-		if (INVALID_SOCKET == (client_socket = accept(server_socket, &client_info, &client_info_len)))
+		if (INVALID_SOCKET == (client_socket = accept(ServerSocket, &client_info, &client_info_len)))
 		{
 			std::cout << "Error with client socket accepting!\n";
 		}
@@ -34,7 +34,7 @@ void SMTPServer::WorkWithClient(SOCKET& client_socket)
 {
 	MailSession mailsession(client_socket);
 	int len;
-	char buf[2050];
+	char buf[2048];
 
 	mailsession.SendResponse(220);
 
@@ -61,21 +61,21 @@ bool SMTPServer::Initialize()
 
 bool SMTPServer::SetSocketSettings()
 {
-	server_socket = socket(AF_INET, SOCK_STREAM, 0);
+	ServerSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (server_socket == INVALID_SOCKET)
+	if (ServerSocket == INVALID_SOCKET)
 	{
 		std::cout << "Error with socket initializing!\n";
 		return false;
 	}
 
-	ZeroMemory(&server_info, sizeof(server_info));
+	ZeroMemory(&ServerInfo, sizeof(ServerInfo));
 
-	server_info.sin_family = AF_INET;
-	server_info.sin_port = htons(25);
-	server_info.sin_addr = *(LPIN_ADDR)(gethostbyname("localhost")->h_addr_list[0]);
+	ServerInfo.sin_family = AF_INET;
+	ServerInfo.sin_port = htons(25);
+	ServerInfo.sin_addr = *(LPIN_ADDR)(gethostbyname("localhost")->h_addr_list[0]);
 
-	if (bind(server_socket, (sockaddr*)&server_info, sizeof(server_info)) == SOCKET_ERROR)
+	if (bind(ServerSocket, (sockaddr*)&ServerInfo, sizeof(ServerInfo)) == SOCKET_ERROR)
 	{
 		std::cout << "Error with socket binding!\n" << WSAGetLastError();
 		return false;
@@ -86,7 +86,7 @@ bool SMTPServer::SetSocketSettings()
 
 void SMTPServer::ServerStart()
 {
-	if (listen(server_socket, SOMAXCONN) == SOCKET_ERROR)
+	if (listen(ServerSocket, SOMAXCONN) == SOCKET_ERROR)
 	{
 		std::cout << "Error with server starting!\n";
 		exit(WSAGetLastError());

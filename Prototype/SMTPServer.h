@@ -10,7 +10,7 @@
 class SMTPServer
 {
 	void AcceptConnections();
-	void WorkWithClient(SOCKET& client_socket);
+	void WorkWithClient(SOCKET& ClientSocket);
 
 public:
 	bool Initialize();
@@ -19,7 +19,7 @@ public:
 
 private:
 	WSADATA wsadata;
-	SOCKET server_socket;
-	SOCKADDR_IN server_info;
+	SOCKET ServerSocket;
+	SOCKADDR_IN ServerInfo;
 };
 
