@@ -6,13 +6,16 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 #define MAX_ADDRESS_LENGTH 256
+#define SMTP_DATA_TERMINATOR "\r\n.\r\n"
 
 enum MailSessionStatus
 {
 	EMPTY,
 	ELLO,
 	MAIL_FROM, 
-	RCPT_TO
+	RCPT_TO,
+	DATA,
+	QUIT
 };
 
 class MailSession
@@ -21,9 +24,11 @@ class MailSession
 	int ProcessHELO(char* buf);
 	int ProcessMAIL(char* buf);
 	int ProcessRCPT(char* buf);
-	int ProcessQUIT(char* buf);
+	int ProcessDATA(char* buf);
+	int SubProcessEmail(char* buf);
+	int ProcessQUIT();
 
-	static bool ValidAdress(char* buf);
+	bool ValidAdress(char* buf);
 	char* CutAddress(char* buf);
 
 public:
@@ -33,7 +38,7 @@ public:
 	const SOCKET& GetSocket() const;
 
 	int SendResponse(int ResponseType);
-	int Processes(char* buf, int len);
+	int Processes(char* buf);
 
 private:
 	SOCKET ClientSocket;

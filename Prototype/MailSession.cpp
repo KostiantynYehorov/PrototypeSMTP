@@ -37,11 +37,12 @@ char* MailSession::CutAddress(char* buf)
 
 int MailSession::SendResponse(int ResponseType)
 {
-	char buf[100];
+	char buf[64];
+	ZeroMemory(&buf, sizeof(buf));
 
 	if (ResponseType == 220)
 	{
-		strcpy(buf, "220 Welcome! \r\n");
+		strcpy(buf, "220 Welcome!\r\n");
 	}
 
 	else if (ResponseType == 221)
@@ -100,8 +101,14 @@ int MailSession::SendResponse(int ResponseType)
 	return ResponseType;
 }
 
-int MailSession::Processes(char* buf, int len)
+int MailSession::Processes(char* buf)
 {
+	if (CurrentStatus == MailSessionStatus::DATA)
+	{
+		return SubProcessEmail(buf);
+	}
+
+
 	if (_strnicmp(buf, "HELO", 4) == 0)
 	{
 		return ProcessHELO(buf);
@@ -124,12 +131,12 @@ int MailSession::Processes(char* buf, int len)
 
 	else if (_strnicmp(buf, "DATA", 4) == 0)
 	{
-		//return ProcessDATA(buf, len);
+		return ProcessDATA(buf);
 	}
 
 	else if (_strnicmp(buf, "QUIT", 4) == 0)
 	{
-		return ProcessQUIT(buf);
+		return ProcessQUIT();
 	}
 
 	else
@@ -218,11 +225,33 @@ int MailSession::ProcessRCPT(char* buf)
 	}
 
 	CurrentStatus = MailSessionStatus::RCPT_TO;
-
 	return SendResponse(250);
 }
 
-int MailSession::ProcessQUIT(char* buf)
+int MailSession::ProcessDATA(char* buf)
+{
+	std::cout << "Received 'DATA'\n";
+
+	if (CurrentStatus != MailSessionStatus::RCPT_TO)
+	{
+		return SendResponse(503);
+	}
+
+	CurrentStatus = MailSessionStatus::DATA;
+	return SendResponse(354);
+}
+
+int MailSession::SubProcessEmail(char* buf)
+{
+	if (strstr(buf, SMTP_DATA_TERMINATOR))
+	{
+		std::cout << "Received DATA END\n";
+		CurrentStatus = MailSessionStatus::QUIT;
+		return SendResponse(250);
+	}
+}
+
+int MailSession::ProcessQUIT()
 {
 	std::cout << "Received 'QUIT'\n";
 	return SendResponse(221);
