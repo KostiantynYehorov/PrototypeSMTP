@@ -143,11 +143,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Mail.cpp" />
     <ClCompile Include="MailSession.cpp" />
     <ClCompile Include="Prototype.cpp" />
     <ClCompile Include="SMTPServer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Mail.h" />
     <ClInclude Include="MailSession.h" />
     <ClInclude Include="SMTPServer.h" />
   </ItemGroup>

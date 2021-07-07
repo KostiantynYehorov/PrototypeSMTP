@@ -2,11 +2,13 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iostream>
+#include <string>
+#include "Mail.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
 #define MAX_ADDRESS_LENGTH 256
-#define SMTP_DATA_TERMINATOR "\r\n.\r\n"
+#define SMTP_DATA_TERMINATOR "."
 
 enum MailSessionStatus
 {
@@ -42,6 +44,7 @@ public:
 
 private:
 	SOCKET ClientSocket;
+	Mail MailInfo;
 	int CurrentStatus = MailSessionStatus::EMPTY;
 };
 

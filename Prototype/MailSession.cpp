@@ -199,6 +199,7 @@ int MailSession::ProcessMAIL(char* buf)
 	}
 
 	CurrentStatus = MailSessionStatus::MAIL_FROM;
+	MailInfo.SetMailFrom(address);
 
 	return SendResponse(250);
 }
@@ -225,6 +226,8 @@ int MailSession::ProcessRCPT(char* buf)
 	}
 
 	CurrentStatus = MailSessionStatus::RCPT_TO;
+	MailInfo.SetRcptTo(address);
+
 	return SendResponse(250);
 }
 
@@ -243,16 +246,20 @@ int MailSession::ProcessDATA(char* buf)
 
 int MailSession::SubProcessEmail(char* buf)
 {
+	MailInfo.SetText(buf);
+
 	if (strstr(buf, SMTP_DATA_TERMINATOR))
 	{
 		std::cout << "Received DATA END\n";
 		CurrentStatus = MailSessionStatus::QUIT;
+
 		return SendResponse(250);
 	}
 }
 
 int MailSession::ProcessQUIT()
 {
+	MailInfo.SaveToFile();
 	std::cout << "Received 'QUIT'\n";
 	return SendResponse(221);
 }
