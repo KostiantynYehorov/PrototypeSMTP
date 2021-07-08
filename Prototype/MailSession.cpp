@@ -2,12 +2,12 @@
 
 MailSession::MailSession(SOCKET& client_socket)
 {
-	this->ClientSocket = client_socket;
+	this->client_socket = client_socket;
 }
 
 const SOCKET& MailSession::GetSocket() const
 {
-	return ClientSocket;
+	return client_socket;
 }
 
 bool MailSession::ValidAdress(char* buf)
@@ -20,72 +20,74 @@ char* MailSession::CutAddress(char* buf)
 	char address[MAX_ADDRESS_LENGTH];
 	ZeroMemory(&address, sizeof(address));
 
-	char* start_adrr, * end_adrr;
+	char* start_addr;
+	char* end_addr;
+
 	int addr_len;
 
-	start_adrr = strchr(buf, '<');
-	start_adrr++;
+	start_addr = strchr(buf, '<');
+	start_addr++;
 
-	end_adrr = strchr(buf, '>');
+	end_addr = strchr(buf, '>');
 
-	addr_len = end_adrr - start_adrr;
+	addr_len = end_addr - start_addr;
 
-	strncpy(address, start_adrr, addr_len);
+	strncpy(address, start_addr, addr_len);
 
 	return address;
 }
 
-int MailSession::SendResponse(int ResponseType)
+int MailSession::SendResponse(int response_type)
 {
 	char buf[64];
 	ZeroMemory(&buf, sizeof(buf));
 
-	if (ResponseType == 220)
+	if (response_type == 220)
 	{
 		strcpy(buf, "220 Welcome!\r\n");
 	}
 
-	else if (ResponseType == 221)
+	else if (response_type == 221)
 	{
 		strcpy(buf, "221 Service closing transmission channel\r\n");
 	}
 
-	else if (ResponseType == 250)
+	else if (response_type == 250)
 	{
 		strcpy(buf, "250 OK\r\n");
 	}
 
-	else if (ResponseType == 234)
+	else if (response_type == 234)
 	{
 		strcpy(buf, "234 go ahead\r\n");
 	}
 
-	else if (ResponseType == 354)
+	else if (response_type == 354)
 	{
 		strcpy(buf, "354 Start mail input; end with <CRLF>.<CRLF>\r\n");
 	}
 
-	else if (ResponseType == 501)
+	else if (response_type == 501)
 	{
 		strcpy(buf, "501 Syntax error in parameters or arguments\r\n");
 	}
 
-	else if (ResponseType == 502)
+	else if (response_type == 502)
 	{
 		strcpy(buf, "502 Command not implemented\r\n");
 	}
 
-	else if (ResponseType == 503)
+	else if (response_type == 503)
 	{
 		strcpy(buf, "503 Bad sequence of commands\r\n");
 	}
 
-	else if (ResponseType == 550)
+	else if (response_type == 550)
 	{
 		strcpy(buf, "550 No such user\r\n");
 	}
 
-	else if (ResponseType == 551)
+	else if (response_type == 551)
 	{
 		strcpy(buf, "551 User not local. Can not forward the mail\r\n");
 	}
@@ -96,14 +98,14 @@ int MailSession::SendResponse(int ResponseType)
 	}
 
 	std::cout << "Sending: " << buf << "\n";
-	send(ClientSocket, buf, sizeof(buf), 0);
+	send(client_socket, buf, sizeof(buf), 0);
 
-	return ResponseType;
+	return response_type;
 }
 
 int MailSession::Processes(char* buf)
 {
-	if (CurrentStatus == MailSessionStatus::DATA)
+	if (current_status == MailSessionStatus::DATA)
 	{
 		return SubProcessEmail(buf);
 	}
@@ -162,7 +164,7 @@ int MailSession::ProcessHELO(char* buf)
 {
 	std::cout << "Received 'HELO' or 'ELHO'\n";
 
-	if (CurrentStatus != MailSessionStatus::EMPTY)
+	if (current_status != MailSessionStatus::EMPTY)
 	{
 		return SendResponse(503);
 	}
@@ -172,7 +174,7 @@ int MailSession::ProcessHELO(char* buf)
 		return SendResponse(501);
 	}
 
-	CurrentStatus = MailSessionStatus::ELLO;
+	current_status = MailSessionStatus::ELLO;
 
 	return SendResponse(250);
 }
@@ -181,7 +183,7 @@ int MailSession::ProcessMAIL(char* buf)
 {
 	std::cout << "Received 'MAIL FROM'\n";
 
-	if (CurrentStatus != MailSessionStatus::ELLO)
+	if (current_status != MailSessionStatus::ELLO)
 	{
 		return SendResponse(503);
 	}
@@ -198,8 +200,8 @@ int MailSession::ProcessMAIL(char* buf)
 		return SendResponse(501);
 	}
 
-	CurrentStatus = MailSessionStatus::MAIL_FROM;
-	MailInfo.SetMailFrom(address);
+	current_status = MailSessionStatus::MAIL_FROM;
+	mail_info.set_mail_from(address);
 
 	return SendResponse(250);
 }
@@ -208,7 +210,7 @@ int MailSession::ProcessRCPT(char* buf)
 {
 	std::cout << "Received 'RCPT TO'\n";
 
-	if (CurrentStatus != MailSessionStatus::MAIL_FROM)
+	if (current_status != MailSessionStatus::MAIL_FROM)
 	{
 		return SendResponse(503);
 	}
@@ -225,8 +227,8 @@ int MailSession::ProcessRCPT(char* buf)
 		return SendResponse(501);
 	}
 
-	CurrentStatus = MailSessionStatus::RCPT_TO;
-	MailInfo.SetRcptTo(address);
+	current_status = MailSessionStatus::RCPT_TO;
+	mail_info.set_rcpt_to(address);
 
 	return SendResponse(250);
 }
@@ -235,23 +237,23 @@ int MailSession::ProcessDATA(char* buf)
 {
 	std::cout << "Received 'DATA'\n";
 
-	if (CurrentStatus != MailSessionStatus::RCPT_TO)
+	if (current_status != MailSessionStatus::RCPT_TO)
 	{
 		return SendResponse(503);
 	}
 
-	CurrentStatus = MailSessionStatus::DATA;
+	current_status = MailSessionStatus::DATA;
 	return SendResponse(354);
 }
 
 int MailSession::SubProcessEmail(char* buf)
 {
-	MailInfo.SetText(buf);
+	mail_info.set_text(buf);
 
 	if (strstr(buf, SMTP_DATA_TERMINATOR))
 	{
 		std::cout << "Received DATA END\n";
-		CurrentStatus = MailSessionStatus::QUIT;
+		current_status = MailSessionStatus::QUIT;
 
 		return SendResponse(250);
 	}
@@ -259,7 +261,7 @@ int MailSession::SubProcessEmail(char* buf)
 
 int MailSession::ProcessQUIT()
 {
-	MailInfo.SaveToFile();
+	mail_info.SaveToFile();
 	std::cout << "Received 'QUIT'\n";
 	return SendResponse(221);
 }

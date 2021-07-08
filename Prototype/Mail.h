@@ -8,22 +8,22 @@ class Mail
 public:
 	Mail() = default;
 
-	void SetMailFrom(char* MailFrom);
-	void SetRcptTo(char* RcptTo);
-	void SetSubject(char* Subject);
-	void SetText(char* Text);
+	void set_mail_from(char* mail_from);
+	void set_rcpt_to(char* rcpt_to);
+	void set_subject(char* subject);
+	void set_text(char* text);
 
-	const char* GetMailFrom() const;
-	const char* GetRcptTo() const;
-	const char* GetSubject() const;
-	const char* GetText() const;
+	const char* get_mail_from() const;
+	const char* get_rcpt_to() const;
+	const char* get_subject() const;
+	const char* get_text() const;
 
 	void SaveToFile();
 
 private:
-	std::string MailFrom;
-	std::string RcptTo;
-	std::string Subject;
-	std::string Text;
+	std::string mail_from;
+	std::string rcpt_to;
+	std::string subject;
+	std::string text;
 };
 

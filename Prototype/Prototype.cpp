@@ -3,13 +3,13 @@
 
 int main()
 {
-	SMTPServer obj;
+	SMTPServer smtp_server;
 
-	if (auto res_init = obj.Initialize())
+	if (auto res_init = smtp_server.Initialize())
 	{
-		if (auto res_settings = obj.SetSocketSettings())
+		if (auto res_settings = smtp_server.SetSocketSettings())
 		{
-			obj.ServerStart();
+			smtp_server.ServerStart();
 		}
 	}
 

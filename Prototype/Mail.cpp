@@ -1,50 +1,50 @@
 #include "Mail.h"
 
-void Mail::SetMailFrom(char* MailFrom)
+void Mail::set_mail_from(char* mail_from)
 {
-	this->MailFrom = MailFrom;
+	this->mail_from = mail_from;
 }
 
-void Mail::SetRcptTo(char* RcptTo)
+void Mail::set_rcpt_to(char* rcpt_to)
 {
-	this->RcptTo = RcptTo;
+	this->rcpt_to = rcpt_to;
 }
 
-void Mail::SetSubject(char* Subject)
+void Mail::set_subject(char* subject)
 {
-	this->Subject = Subject;
+	this->subject = subject;
 }
 
-void Mail::SetText(char* Text)
+void Mail::set_text(char* text)
 {
-	this->Text += "\n" + static_cast<std::string>(Text);
+	this->text += "\n" + static_cast<std::string>(text);
 }
 
-const char* Mail::GetMailFrom() const
+const char* Mail::get_mail_from() const
 {
-	return MailFrom.c_str();
+	return mail_from.c_str();
 }
 
-const char* Mail::GetRcptTo() const
+const char* Mail::get_rcpt_to() const
 {
-	return RcptTo.c_str();
+	return rcpt_to.c_str();
 }
 
-const char* Mail::GetSubject() const
+const char* Mail::get_subject() const
 {
-	return Subject.c_str();
+	return subject.c_str();
 }
 
-const char* Mail::GetText() const
+const char* Mail::get_text() const
 {
-	return Text.c_str();
+	return text.c_str();
 }
 
 void Mail::SaveToFile()
 {
 	std::ofstream file("email.txt", std::ofstream::app);
 
-	file << "From: " << MailFrom << "\nTo: " << RcptTo << "\nSubject: " << Subject << "\n\n" << Text << "\n\n";
+	file << "From: " << mail_from << "\nTo: " << rcpt_to << "\nSubject: " << subject << "\n\n" << text << "\n\n";
 
 	file.close();
 }
