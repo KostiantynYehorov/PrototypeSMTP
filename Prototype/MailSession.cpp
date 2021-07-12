@@ -1,3 +1,7 @@
+// This is an independent project of an individual developer. Dear PVS-Studio, please check it.
+
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+
 #include "MailSession.h"
 
 MailSession::MailSession(SOCKET& client_socket)
@@ -12,29 +16,30 @@ const SOCKET& MailSession::GetSocket() const
 
 bool MailSession::ValidAdress(char* buf)
 {
-	return (strlen(buf) > 2 && strlen(buf) < 255 && strchr(buf, '@'));
+	size_t strlen_buf = strlen(buf);
+	return (strlen_buf > 2 && strlen_buf < 255 && strchr(buf, '@'));
 }
 
 char* MailSession::CutAddress(char* buf)
 {
-	char address[MAX_ADDRESS_LENGTH];
-	ZeroMemory(&address, sizeof(address));
-
 	char* start_addr;
 	char* end_addr;
 
-	int addr_len;
+	size_t addr_len;
 
 	start_addr = strchr(buf, '<');
-	start_addr++;
-
 	end_addr = strchr(buf, '>');
 
-	addr_len = end_addr - start_addr;
+	if (start_addr != nullptr && end_addr != nullptr)
+	{
+		start_addr++;
 
-	strncpy(address, start_addr, addr_len);
+		addr_len = end_addr - start_addr;
 
-	return address;
+		strncpy(buf, start_addr, addr_len);
+	}
+
+	return buf;
 }
 
 int MailSession::SendResponse(int response_type)
@@ -42,52 +47,47 @@ int MailSession::SendResponse(int response_type)
 	char buf[64];
 	ZeroMemory(&buf, sizeof(buf));
 
-	if (response_type == 220)
+	if (response_type == Responses::WELCOME)
 	{
 		strcpy(buf, "220 Welcome!\r\n");
 	}
 
-	else if (response_type == 221)
+	else if (response_type == Responses::SERVICE_CLOSING)
 	{
 		strcpy(buf, "221 Service closing transmission channel\r\n");
 	}
 
-	else if (response_type == 250)
+	else if (response_type == Responses::OK)
 	{
 		strcpy(buf, "250 OK\r\n");
 	}
 
-	else if (response_type == 234)
-	{
-		strcpy(buf, "234 go ahead\r\n");
-	}
-
-	else if (response_type == 354)
+	else if (response_type == Responses::START_MAIL)
 	{
 		strcpy(buf, "354 Start mail input; end with <CRLF>.<CRLF>\r\n");
 	}
 
-	else if (response_type == 501)
+	else if (response_type == Responses::SYNTAX_ERROR)
 	{
 		strcpy(buf, "501 Syntax error in parameters or arguments\r\n");
 	}
 
-	else if (response_type == 502)
+	else if (response_type == Responses::COMMAND_NOT_IMPLEMENTED)
 	{
 		strcpy(buf, "502 Command not implemented\r\n");
 	}
 
-	else if (response_type == 503)
+	else if (response_type == Responses::BAD_SEQUENSE)
 	{
 		strcpy(buf, "503 Bad sequence of commands\r\n");
 	}
 
-	else if (response_type == 550)
+	else if (response_type == Responses::NO_USER)
 	{
 		strcpy(buf, "550 No such user\r\n");
 	}
 
-	else if (response_type == 551)
+	else if (response_type == Responses::USER_NOT_LOCAL)
 	{
 		strcpy(buf, "551 User not local. Can not forward the mail\r\n");
 	}
@@ -111,32 +111,32 @@ int MailSession::Processes(char* buf)
 	}
 
 
-	if (_strnicmp(buf, "HELO", 4) == 0)
+	if (_strnicmp(buf, "HELO", FIRST_FOUR_SYMBOLS) == 0)
 	{
 		return ProcessHELO(buf);
 	}
 
-	else if (_strnicmp(buf, "EHLO", 4) == 0)
+	else if (_strnicmp(buf, "EHLO", FIRST_FOUR_SYMBOLS) == 0)
 	{
 		return ProcessHELO(buf);
 	}
 
-	else if (_strnicmp(buf, "MAIL", 4) == 0)
+	else if (_strnicmp(buf, "MAIL", FIRST_FOUR_SYMBOLS) == 0)
 	{
 		return ProcessMAIL(buf);
 	}
 
-	else if (_strnicmp(buf, "RCPT", 4) == 0)
+	else if (_strnicmp(buf, "RCPT", FIRST_FOUR_SYMBOLS) == 0)
 	{
 		return ProcessRCPT(buf);
 	}
 
-	else if (_strnicmp(buf, "DATA", 4) == 0)
+	else if (_strnicmp(buf, "DATA", FIRST_FOUR_SYMBOLS) == 0)
 	{
 		return ProcessDATA(buf);
 	}
 
-	else if (_strnicmp(buf, "QUIT", 4) == 0)
+	else if (_strnicmp(buf, "QUIT", FIRST_FOUR_SYMBOLS) == 0)
 	{
 		return ProcessQUIT();
 	}
@@ -166,17 +166,17 @@ int MailSession::ProcessHELO(char* buf)
 
 	if (current_status != MailSessionStatus::EMPTY)
 	{
-		return SendResponse(503);
+		return SendResponse(Responses::BAD_SEQUENSE);
 	}
 
 	if (strchr(buf, '.') == NULL)
 	{
-		return SendResponse(501);
+		return SendResponse(Responses::SYNTAX_ERROR);
 	}
 
 	current_status = MailSessionStatus::ELLO;
 
-	return SendResponse(250);
+	return SendResponse(Responses::OK);
 }
 
 int MailSession::ProcessMAIL(char* buf)
@@ -185,7 +185,7 @@ int MailSession::ProcessMAIL(char* buf)
 
 	if (current_status != MailSessionStatus::ELLO)
 	{
-		return SendResponse(503);
+		return SendResponse(Responses::BAD_SEQUENSE);
 	}
 
 	char* address;
@@ -197,13 +197,13 @@ int MailSession::ProcessMAIL(char* buf)
 
 	if (!MailSession::ValidAdress(address))
 	{
-		return SendResponse(501);
+		return SendResponse(Responses::SYNTAX_ERROR);
 	}
 
 	current_status = MailSessionStatus::MAIL_FROM;
 	mail_info.set_mail_from(address);
 
-	return SendResponse(250);
+	return SendResponse(Responses::OK);
 }
 
 int MailSession::ProcessRCPT(char* buf)
@@ -212,7 +212,7 @@ int MailSession::ProcessRCPT(char* buf)
 
 	if (current_status != MailSessionStatus::MAIL_FROM)
 	{
-		return SendResponse(503);
+		return SendResponse(Responses::BAD_SEQUENSE);
 	}
 
 	char* address;
@@ -224,13 +224,13 @@ int MailSession::ProcessRCPT(char* buf)
 
 	if (!MailSession::ValidAdress(address))
 	{
-		return SendResponse(501);
+		return SendResponse(Responses::SYNTAX_ERROR);
 	}
 
 	current_status = MailSessionStatus::RCPT_TO;
 	mail_info.set_rcpt_to(address);
 
-	return SendResponse(250);
+	return SendResponse(Responses::OK);
 }
 
 int MailSession::ProcessDATA(char* buf)
@@ -239,11 +239,11 @@ int MailSession::ProcessDATA(char* buf)
 
 	if (current_status != MailSessionStatus::RCPT_TO)
 	{
-		return SendResponse(503);
+		return SendResponse(Responses::BAD_SEQUENSE);
 	}
 
 	current_status = MailSessionStatus::DATA;
-	return SendResponse(354);
+	return SendResponse(Responses::START_MAIL);
 }
 
 int MailSession::SubProcessEmail(char* buf)
@@ -255,13 +255,15 @@ int MailSession::SubProcessEmail(char* buf)
 		std::cout << "Received DATA END\n";
 		current_status = MailSessionStatus::QUIT;
 
-		return SendResponse(250);
+		return SendResponse(Responses::OK);
 	}
+
+	return SendResponse(Responses::OK);
 }
 
 int MailSession::ProcessQUIT()
 {
 	mail_info.SaveToFile();
 	std::cout << "Received 'QUIT'\n";
-	return SendResponse(221);
+	return SendResponse(Responses::SERVICE_CLOSING);
 }

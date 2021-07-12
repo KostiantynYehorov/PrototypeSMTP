@@ -8,7 +8,8 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 #define MAX_ADDRESS_LENGTH 256
-#define SMTP_DATA_TERMINATOR "\n\r.\r\n"
+#define SMTP_DATA_TERMINATOR "\r\n.\r\n"
+#define FIRST_FOUR_SYMBOLS 4
 
 enum MailSessionStatus
 {
@@ -18,6 +19,19 @@ enum MailSessionStatus
 	RCPT_TO,
 	DATA,
 	QUIT
+};
+
+enum Responses
+{
+	WELCOME = 220,
+	SERVICE_CLOSING,
+	OK = 250,
+	START_MAIL = 354,
+	SYNTAX_ERROR = 501,
+	COMMAND_NOT_IMPLEMENTED,
+	BAD_SEQUENSE,
+	NO_USER = 550,
+	USER_NOT_LOCAL
 };
 
 class MailSession
