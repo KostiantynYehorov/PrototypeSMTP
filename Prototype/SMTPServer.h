@@ -17,6 +17,8 @@
 class SMTPServer
 {
 public:
+	SMTPServer() = default;
+
 	bool Initialize();
 	bool SetSocketSettings();
 	void ServerStart();
@@ -26,10 +28,8 @@ private:
 	static void WorkWithClient(SOCKET client_socket);
 
 private:
-	WSADATA wsa_data;
-	SOCKET server_socket;
-	SOCKADDR_IN server_info;
+	SOCKET server_socket = INVALID_SOCKET;
 
-	std::unique_ptr<ThreadPool> thread_pool = nullptr;
+	std::unique_ptr<ThreadPool> thread_pool;
 };
 

@@ -10,10 +10,10 @@ class Mail
 public:
 	Mail() = default;
 
-	void set_mail_from(char* mail_from);
-	void set_rcpt_to(char* rcpt_to);
-	void set_subject(char* subject);
-	void set_text(char* text);
+	void set_mail_from(std::string& mail_from);
+	void set_rcpt_to(std::string& rcpt_to);
+	void set_subject(std::string& subject);
+	void set_text(std::string& text);
 
 	const char* get_mail_from() const;
 	const char* get_rcpt_to() const;

@@ -4,24 +4,24 @@
 
 #include "Mail.h"
 
-void Mail::set_mail_from(char* mail_from)
+void Mail::set_mail_from(std::string& mail_from)
 {
 	this->mail_from = mail_from;
 }
 
-void Mail::set_rcpt_to(char* rcpt_to)
+void Mail::set_rcpt_to(std::string& rcpt_to)
 {
 	this->rcpt_to = rcpt_to;
 }
 
-void Mail::set_subject(char* subject)
+void Mail::set_subject(std::string& subject)
 {
 	this->subject = subject;
 }
 
-void Mail::set_text(char* text)
+void Mail::set_text(std::string& text)
 {
-	this->text += "\n" + static_cast<std::string>(text);
+	this->text += "\n" + text;
 }
 
 const char* Mail::get_mail_from() const
@@ -48,7 +48,7 @@ void Mail::SaveToFile()
 {
 	std::ofstream file("email.txt", std::ofstream::app);
 
-	file << "From: " << mail_from << "\nTo: " << rcpt_to << "\nSubject: " << subject << "\n\n" << text << "\n\n";
+	file << "From: " << mail_from << "\nTo: " << rcpt_to << "\nSubject: " << subject << "\n\n" << text;
 
 	file.close();
 }

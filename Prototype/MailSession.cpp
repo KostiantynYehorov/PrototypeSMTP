@@ -20,26 +20,35 @@ bool MailSession::ValidAdress(char* buf)
 	return (strlen_buf > 2 && strlen_buf < 255 && strchr(buf, '@'));
 }
 
-char* MailSession::CutAddress(char* buf)
+std::string MailSession::CutAddress(char* buf)
 {
-	char* start_addr;
-	char* end_addr;
+	std::string str_buf = buf;
+	std::string result = "";
 
-	size_t addr_len;
+	size_t start_pos = str_buf.find("<", 0);
+	size_t end_pos = str_buf.find(">", 0);
 
-	start_addr = strchr(buf, '<');
-	end_addr = strchr(buf, '>');
-
-	if (start_addr != nullptr && end_addr != nullptr)
+	for (size_t i = start_pos + 1; i < end_pos; i++)
 	{
-		start_addr++;
-
-		addr_len = end_addr - start_addr;
-
-		strncpy(buf, start_addr, addr_len);
+		result += str_buf.at(i);
 	}
 
-	return buf;
+	return result;
+}
+
+std::string MailSession::CutSubject(char* buf)
+{
+	std::string str_buf = buf;
+	std::string result = "";
+
+	size_t start_pos = str_buf.find(":", 0);
+
+	for (size_t i = start_pos + 2; i < str_buf.size(); i++)
+	{
+		result += str_buf.at(i);
+	}
+
+	return result;
 }
 
 int MailSession::SendResponse(int response_type)
@@ -105,7 +114,13 @@ int MailSession::SendResponse(int response_type)
 
 int MailSession::Processes(char* buf)
 {
+
 	if (current_status == MailSessionStatus::DATA)
+	{
+		return SubProcessSubject(buf);
+	}
+
+	if (current_status == MailSessionStatus::SUBJECT)
 	{
 		return SubProcessEmail(buf);
 	}
@@ -156,7 +171,7 @@ int MailSession::ProcessNotImplemented(bool arg)
 
 	else
 	{
-		return SendResponse(502);
+		return SendResponse(Responses::COMMAND_NOT_IMPLEMENTED);
 	}
 }
 
@@ -174,7 +189,7 @@ int MailSession::ProcessHELO(char* buf)
 		return SendResponse(Responses::SYNTAX_ERROR);
 	}
 
-	current_status = MailSessionStatus::ELLO;
+	current_status = MailSessionStatus::EHLO;
 
 	return SendResponse(Responses::OK);
 }
@@ -183,19 +198,18 @@ int MailSession::ProcessMAIL(char* buf)
 {
 	std::cout << "Received 'MAIL FROM'\n";
 
-	if (current_status != MailSessionStatus::ELLO)
+	if (current_status != MailSessionStatus::EHLO)
 	{
 		return SendResponse(Responses::BAD_SEQUENSE);
 	}
 
-	char* address;
-	ZeroMemory(&address, sizeof(address));
+	std::string address;
 
 	address = CutAddress(buf);
 
 	std::cout << "Message from: " << address << "\n";
 
-	if (!MailSession::ValidAdress(address))
+	if (!MailSession::ValidAdress((char*)address.c_str()))
 	{
 		return SendResponse(Responses::SYNTAX_ERROR);
 	}
@@ -215,14 +229,13 @@ int MailSession::ProcessRCPT(char* buf)
 		return SendResponse(Responses::BAD_SEQUENSE);
 	}
 
-	char* address;
-	ZeroMemory(&address, sizeof(address));
+	std::string address;
 
 	address = CutAddress(buf);
 
 	std::cout << "Message from: " << address << "\n";
 
-	if (!MailSession::ValidAdress(address))
+	if (!MailSession::ValidAdress((char*)address.c_str()))
 	{
 		return SendResponse(Responses::SYNTAX_ERROR);
 	}
@@ -248,7 +261,8 @@ int MailSession::ProcessDATA(char* buf)
 
 int MailSession::SubProcessEmail(char* buf)
 {
-	mail_info.set_text(buf);
+	std::string text = buf;
+	mail_info.set_text(text);
 
 	if (strstr(buf, SMTP_DATA_TERMINATOR))
 	{
@@ -257,6 +271,22 @@ int MailSession::SubProcessEmail(char* buf)
 
 		return SendResponse(Responses::OK);
 	}
+
+	return SendResponse(Responses::OK);
+}
+
+int MailSession::SubProcessSubject(char* buf)
+{
+	if (_strnicmp(buf, "Subject:", FIRST_EIGHT_SYMBOLS) != 0)
+	{
+		return SendResponse(Responses::SYNTAX_ERROR);
+	}
+
+	std::string subject;
+	subject = CutSubject(buf);
+
+	current_status = MailSessionStatus::SUBJECT;
+	mail_info.set_subject(subject);
 
 	return SendResponse(Responses::OK);
 }

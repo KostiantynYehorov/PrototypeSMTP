@@ -12,14 +12,18 @@
 #define MAX_ADDRESS_LENGTH 256
 #define SMTP_DATA_TERMINATOR "\r\n.\r\n"
 #define FIRST_FOUR_SYMBOLS 4
+#define FIRST_EIGHT_SYMBOLS 8
+
+//#define SMTP_DATA_TERMINATOR "."
 
 enum MailSessionStatus
 {
 	EMPTY,
-	ELLO,
+	EHLO,
 	MAIL_FROM, 
 	RCPT_TO,
 	DATA,
+	SUBJECT,
 	QUIT
 };
 
@@ -53,11 +57,16 @@ private:
 	int ProcessMAIL(char* buf);
 	int ProcessRCPT(char* buf);
 	int ProcessDATA(char* buf);
+
 	int SubProcessEmail(char* buf);
+	int SubProcessSubject(char* buf);
+
 	int ProcessQUIT();
 
 	bool ValidAdress(char* buf);
-	char* CutAddress(char* buf);
+
+	std::string CutSubject(char* buf);
+	std::string CutAddress(char* buf);
 
 private:
 	SOCKET client_socket;

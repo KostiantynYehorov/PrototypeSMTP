@@ -8,8 +8,6 @@ void SMTPServer::AcceptConnections()
 {
 	SOCKET client_socket;
 
-	std::cout << std::this_thread::get_id() << "\n";
-
 	while (true)
 	{
 		SOCKADDR client_info;
@@ -26,21 +24,15 @@ void SMTPServer::AcceptConnections()
 		{
 			std::cout << "Accepted new connection. Now creating session thread...\n";
 			
-			thread_pool->AddTask(WorkWithClient, client_socket);
-
-			//std::thread new_thread([&]() 
-			//	{
-			//		WorkWithClient(client_socket);
-			//	});
-
-			//new_thread.detach();
+			//thread_pool->AddTask(WorkWithClient, client_socket);
+			WorkWithClient(client_socket);
 		}
 	}
 }
 
 void SMTPServer::WorkWithClient(SOCKET client_socket)
 {
-	std::cout << std::this_thread::get_id() << "\n";
+	int len = 0;
 
 	MailSession mail_session(client_socket);
 	char buf[128];
@@ -48,10 +40,8 @@ void SMTPServer::WorkWithClient(SOCKET client_socket)
 
 	mail_session.SendResponse(220);
 
-	while (true)
+	while (len = recv(mail_session.GetSocket(), (char*)&buf, sizeof(buf), 0))
 	{
-		recv(mail_session.GetSocket(), (char*)&buf, sizeof(buf), 0);
-
 		if (221 == mail_session.Processes(buf))
 		{
 			std::cout << "End of work\n";
@@ -60,12 +50,13 @@ void SMTPServer::WorkWithClient(SOCKET client_socket)
 		}
 
 		ZeroMemory(&buf, sizeof(buf));
-		Sleep(50);
 	}
 }
 
 bool SMTPServer::Initialize()
 {
+	WSADATA wsa_data;
+
 	if (auto res = WSAStartup(MAKEWORD(2,2), &wsa_data) != 0)
 	{
 		std::cout << "Error with winsock initializing!\n";
@@ -79,6 +70,8 @@ bool SMTPServer::Initialize()
 
 bool SMTPServer::SetSocketSettings()
 {
+	SOCKADDR_IN server_info;
+
 	server_socket = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (server_socket == INVALID_SOCKET)
