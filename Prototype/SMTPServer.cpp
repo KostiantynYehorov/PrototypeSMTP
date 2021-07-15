@@ -8,6 +8,8 @@ void SMTPServer::AcceptConnections()
 {
 	SOCKET client_socket;
 
+	std::cout << std::this_thread::get_id() << "\n";
+
 	while (true)
 	{
 		SOCKADDR client_info;
@@ -23,19 +25,23 @@ void SMTPServer::AcceptConnections()
 		else
 		{
 			std::cout << "Accepted new connection. Now creating session thread...\n";
+			
+			thread_pool->AddTask(WorkWithClient, client_socket);
 
-			std::thread new_thread([&]() 
-				{
-					WorkWithClient(client_socket);
-				});
+			//std::thread new_thread([&]() 
+			//	{
+			//		WorkWithClient(client_socket);
+			//	});
 
-			new_thread.detach();
+			//new_thread.detach();
 		}
 	}
 }
 
-void SMTPServer::WorkWithClient(SOCKET& client_socket)
+void SMTPServer::WorkWithClient(SOCKET client_socket)
 {
+	std::cout << std::this_thread::get_id() << "\n";
+
 	MailSession mail_session(client_socket);
 	char buf[128];
 	ZeroMemory(&buf, sizeof(buf));
@@ -65,6 +71,8 @@ bool SMTPServer::Initialize()
 		std::cout << "Error with winsock initializing!\n";
 		return false;
 	}
+
+	thread_pool = std::make_unique<ThreadPool>(3);
 
 	return true;
 }
