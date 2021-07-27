@@ -1,9 +1,9 @@
 #include "ThreadPool.h"
 
-ThreadPool::ThreadPool(int thread_size)
+ThreadPool::ThreadPool(int threadpool_size)
 {
-    this->thread_size = thread_size;
-    is_stop = false;
+    this->m_threadpool_size = threadpool_size;
+    m_is_stop = false;
 
 }
 
@@ -19,37 +19,37 @@ ThreadPool::~ThreadPool()
 
 void ThreadPool::Join()
 {
-    for (int i = 0; i < thread_size; ++i)
+    for (int i = 0; i < m_threadpool_size; ++i)
     {
-        thread_pool.at(i).join();
+        m_thread_pool.at(i).join();
     }
 }
 
 void ThreadPool::Stop()
 {
-    is_stop = true;
+    m_is_stop = true;
 
-    for (int i = 0; i < thread_size; ++i)
+    for (int i = 0; i < m_threadpool_size; ++i)
     {
-        thread_pool.pop_back();
+        m_thread_pool.pop_back();
     }
 }
 
 void ThreadPool::DoTask()
 {
-    while (!is_stop && !task.empty())
+    while (!m_is_stop && !m_task.empty())
     {
-        std::unique_lock<std::mutex> lck(m);
+        std::unique_lock<std::mutex> lck(m_mutex);
 
-        while (task.empty())
+        while (m_task.empty())
         {
-            task_not_empty.wait(lck);
+            m_task_not_empty.wait(lck);
         }
 
-        auto t_task = task.begin()->first;
-        auto s_socket = task.begin()->second;
+        auto t_task = m_task.begin()->first;
+        auto s_socket = m_task.begin()->second;
 
-        task.erase(task.begin());
+        m_task.erase(m_task.begin());
         lck.unlock();
 
         t_task(s_socket);
@@ -58,18 +58,18 @@ void ThreadPool::DoTask()
 
 void ThreadPool::AddTask(void* in_task, SOCKET socket)
 {
-    std::unique_lock<std::mutex> lck(m);
-    task.emplace((RUNFUC)in_task, socket);
+    std::unique_lock<std::mutex> lck(m_mutex);
+    m_task.emplace((RUNFUC)in_task, socket);
 
-    if (task.size() == 1)
+    if (m_task.size() == 1)
     {
-        task_not_empty.notify_one();
+        m_task_not_empty.notify_one();
     }
 
-    thread_pool.emplace_back(&ThreadPool::DoTask, this);
+    m_thread_pool.emplace_back(&ThreadPool::DoTask, this);
 }
 
-void ThreadPool::set_size(int thread_size)
+void ThreadPool::set_size(int m_threadpool_size)
 {
-    this->thread_size = thread_size;
+    this->m_threadpool_size = m_threadpool_size;
 }

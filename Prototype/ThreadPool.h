@@ -25,31 +25,29 @@ typedef void (*RUNFUC)(SOCKET);
 class ThreadPool
 {
 public:
-    ThreadPool() : is_stop(false), thread_size(0) {}
-    ThreadPool(int thread_size);
+    ThreadPool() : m_is_stop(false), m_threadpool_size(0) {}
+    ThreadPool(int m_threadpool_size);
     ~ThreadPool();
 
     void AddTask(void* in_task, SOCKET socket);
 
-    void set_size(int thread_size);
+    void set_size(int threadpool_size);
 
 private:
     void Join();
     void Stop();
     void DoTask();
 
-    bool IsStopped() { return is_stop; };
+    bool IsStopped() { return m_is_stop; };
 
 private:
-    int thread_size;
-    bool is_stop;
+    int m_threadpool_size;
+    bool m_is_stop;
 
-    std::map<RUNFUC, SOCKET> task;
+    std::vector<std::thread> m_thread_pool;
+    std::map<RUNFUC, SOCKET> m_task;
+    std::condition_variable m_task_not_empty;
+    std::mutex m_mutex;
 
-    std::mutex m;
-
-    std::vector<std::thread> thread_pool;
-
-    std::condition_variable task_not_empty;
 };
 

@@ -4,12 +4,12 @@
 
 #include "MailSession.h"
 
-MailSession::MailSession(SOCKET& client_socket)
+MailSession::MailSession(SOCKET client_socket)
 {
 	this->client_socket = client_socket;
 }
 
-const SOCKET& MailSession::GetSocket() const
+const SOCKET& MailSession::get_client_socket() const
 {
 	return client_socket;
 }
@@ -17,7 +17,7 @@ const SOCKET& MailSession::GetSocket() const
 bool MailSession::ValidAdress(char* buf)
 {
 	size_t strlen_buf = strlen(buf);
-	return (strlen_buf > 2 && strlen_buf < 255 && strchr(buf, '@'));
+	return (strlen_buf > MIN_MAIL_SIZE && strlen_buf < MAX_MAIL_SIZE && strchr(buf, '@'));
 }
 
 std::string MailSession::CutAddress(char* buf)
@@ -53,7 +53,7 @@ std::string MailSession::CutSubject(char* buf)
 
 int MailSession::SendResponse(int response_type)
 {
-	char buf[64];
+	char buf[RESPONSE_BUF_SIZE];
 	ZeroMemory(&buf, sizeof(buf));
 
 	if (response_type == Responses::WELCOME_TO_CLIENT)
@@ -182,21 +182,13 @@ int MailSession::Processes(char* buf)
 
 	else
 	{
-		return ProcessNotImplemented(false);
+		return ProcessNotImplemented();
 	}
 }
 
-int MailSession::ProcessNotImplemented(bool arg)
+int MailSession::ProcessNotImplemented()
 {
-	if (arg)
-	{
-		return SendResponse(504);
-	}
-
-	else
-	{
-		return SendResponse(Responses::COMMAND_NOT_IMPLEMENTED);
-	}
+	return SendResponse(Responses::COMMAND_NOT_IMPLEMENTED);
 }
 
 int MailSession::ProcessHELO(char* buf)
@@ -226,7 +218,7 @@ int MailSession::ProcessAUTH(char* buf)
 		return SendResponse(Responses::LOGIN_RCV);
 	}
 
-	if (current_status == MailSessionStatus::LOGIN)
+	else if (current_status == MailSessionStatus::LOGIN)
 	{
 		return SubProcessLoginRecieve(buf);
 	}
@@ -251,10 +243,7 @@ int MailSession::ProcessMAIL(char* buf)
 		return SendResponse(Responses::BAD_SEQUENSE);
 	}
 
-	std::string address;
-
-	address = CutAddress(buf);
-
+	std::string address = CutAddress(buf);
 	std::cout << "Message from: " << address << "\n";
 
 	if (!MailSession::ValidAdress((char*)address.c_str()))
@@ -277,9 +266,7 @@ int MailSession::ProcessRCPT(char* buf)
 		return SendResponse(Responses::BAD_SEQUENSE);
 	}
 
-	std::string address;
-
-	address = CutAddress(buf);
+	std::string address = CutAddress(buf);
 
 	std::cout << "Message from: " << address << "\n";
 
@@ -325,7 +312,7 @@ int MailSession::SubProcessEmail(char* buf)
 
 	if (strstr(buf, SMTP_DATA_TERMINATOR))
 	{
-		int pos = text.find("\r\n", 0);
+		size_t pos = text.find("\r\n", 0);
 		text = text.substr(0, pos);
 		mail_info.set_text(text);
 

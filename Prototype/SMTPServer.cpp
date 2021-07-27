@@ -15,7 +15,7 @@ void SMTPServer::AcceptConnections()
 
 		std::cout << "Waiting for incoming connection...\n";
 
-		if (INVALID_SOCKET == (client_socket = accept(server_socket, &client_info, &client_info_len)))
+		if (INVALID_SOCKET == (client_socket = accept(m_server_socket, &client_info, &client_info_len)))
 		{
 			std::cout << "Error with client socket accepting!\n";
 		}
@@ -24,8 +24,7 @@ void SMTPServer::AcceptConnections()
 		{
 			std::cout << "Accepted new connection. Now creating session thread...\n";
 			
-			/*thread_pool->AddTask(WorkWithClient, client_socket);*/
-			WorkWithClient(client_socket);
+			m_thread_pool->AddTask(WorkWithClient, client_socket);
 		}
 	}
 }
@@ -33,19 +32,18 @@ void SMTPServer::AcceptConnections()
 void SMTPServer::WorkWithClient(SOCKET client_socket)
 {
 	MailSession mail_session(client_socket);
-	char buf[128];
+	char buf[BUF_SIZE];
+	int len;
 	ZeroMemory(&buf, sizeof(buf));
 
-	mail_session.SendResponse(220);
+	mail_session.SendResponse(WELCOME);
 
-	while (true)
+	while (len = recv(mail_session.get_client_socket(), (char*)&buf, sizeof(buf), 0))
 	{
-		recv(mail_session.GetSocket(), (char*)&buf, sizeof(buf), 0);
-
-		if (221 == mail_session.Processes(buf))
+		if (SERVER_CLOSED == mail_session.Processes(buf))
 		{
 			std::cout << "End of work\n";
-			closesocket(mail_session.GetSocket());
+			closesocket(mail_session.get_client_socket());
 			break;
 		}
 
@@ -57,14 +55,13 @@ bool SMTPServer::Initialize()
 {
 	WSADATA wsa_data;
 
-	if (auto res = WSAStartup(MAKEWORD(2,2), &wsa_data) != 0)
+	if (auto res = WSAStartup(MAKEWORD(WINSOCK_VER, WINSOCK_VER), &wsa_data) != 0)
 	{
 		std::cout << "Error with winsock initializing!\n";
 		return false;
 	}
 
-	thread_pool = std::make_unique<ThreadPool>(3);
-
+	m_thread_pool = std::make_unique<ThreadPool>(3);
 	return true;
 }
 
@@ -72,9 +69,9 @@ bool SMTPServer::SetSocketSettings()
 {
 	SOCKADDR_IN server_info;
 
-	server_socket = socket(AF_INET, SOCK_STREAM, 0);
+	m_server_socket = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (server_socket == INVALID_SOCKET)
+	if (m_server_socket == INVALID_SOCKET)
 	{
 		std::cout << "Error with socket initializing!\n";
 		return false;
@@ -86,7 +83,7 @@ bool SMTPServer::SetSocketSettings()
 	server_info.sin_port = htons(25);
 	server_info.sin_addr = *(LPIN_ADDR)(gethostbyname("localhost")->h_addr_list[0]);
 
-	if (bind(server_socket, (sockaddr*)&server_info, sizeof(server_info)) == SOCKET_ERROR)
+	if (bind(m_server_socket, (sockaddr*)&server_info, sizeof(server_info)) == SOCKET_ERROR)
 	{
 		std::cout << "Error with socket binding!\n" << WSAGetLastError();
 		return false;
@@ -97,7 +94,7 @@ bool SMTPServer::SetSocketSettings()
 
 void SMTPServer::ServerStart()
 {
-	if (listen(server_socket, SOMAXCONN) == SOCKET_ERROR)
+	if (listen(m_server_socket, SOMAXCONN) == SOCKET_ERROR)
 	{
 		std::cout << "Error with server starting!\n";
 		exit(WSAGetLastError());

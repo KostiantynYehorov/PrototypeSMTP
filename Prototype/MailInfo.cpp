@@ -4,51 +4,31 @@
 
 #include "MailInfo.h"
 
-void MailInfo::set_mail_from(std::string& mail_from)
+void MailInfo::set_mail_from(const std::string& mail_from)
 {
-	this->mail_from = mail_from;
+	this->m_mail_from = mail_from;
 }
 
-void MailInfo::set_rcpt_to(std::string& rcpt_to)
+void MailInfo::set_rcpt_to(const std::string& rcpt_to)
 {
-	this->rcpt_to = rcpt_to;
+	this->m_rcpt_to = rcpt_to;
 }
 
-void MailInfo::set_subject(std::string& subject)
+void MailInfo::set_subject(const std::string& subject)
 {
-	this->subject = subject;
+	this->m_subject = subject;
 }
 
-void MailInfo::set_text(std::string& text)
+void MailInfo::set_text(const std::string& text)
 {
-	this->text += "\n" + text;
-}
-
-const char* MailInfo::get_mail_from() const
-{
-	return mail_from.c_str();
-}
-
-const char* MailInfo::get_rcpt_to() const
-{
-	return rcpt_to.c_str();
-}
-
-const char* MailInfo::get_subject() const
-{
-	return subject.c_str();
-}
-
-const char* MailInfo::get_text() const
-{
-	return text.c_str();
+	this->m_text += "\n" + text;
 }
 
 void MailInfo::SaveToFile()
 {
 	std::ofstream file("email.txt", std::ofstream::app);
 
-	file << "From: " << mail_from << "\nTo: " << rcpt_to << "\nSubject: " << subject << text << "\n\n";
+	file << "From: " << m_mail_from << "\nTo: " << m_rcpt_to << "\nSubject: " << m_subject << m_text << "\n\n";
 
 	file.close();
 }

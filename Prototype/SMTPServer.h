@@ -14,6 +14,11 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
+constexpr auto WINSOCK_VER = 2;
+constexpr auto BUF_SIZE = 128;
+constexpr auto WELCOME = 220;
+constexpr auto SERVER_CLOSED = 221;
+
 class SMTPServer
 {
 public:
@@ -28,8 +33,7 @@ private:
 	static void WorkWithClient(SOCKET client_socket);
 
 private:
-	SOCKET server_socket = INVALID_SOCKET;
-
-	std::unique_ptr<ThreadPool> thread_pool;
+	SOCKET m_server_socket = INVALID_SOCKET;
+	std::unique_ptr<ThreadPool> m_thread_pool;
 };
 

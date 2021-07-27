@@ -9,10 +9,13 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-#define MAX_ADDRESS_LENGTH 256
-#define SMTP_DATA_TERMINATOR "\r\n.\r\n"
-#define FIRST_FOUR_SYMBOLS 4
-#define FIRST_EIGHT_SYMBOLS 8
+constexpr auto MAX_ADDRESS_LENGTH = 256;
+constexpr auto SMTP_DATA_TERMINATOR = "\r\n.\r\n";
+constexpr auto FIRST_FOUR_SYMBOLS = 4;
+constexpr auto FIRST_EIGHT_SYMBOLS = 8;
+constexpr auto MIN_MAIL_SIZE = 2;
+constexpr auto MAX_MAIL_SIZE = 255;
+constexpr auto RESPONSE_BUF_SIZE = 64;
 
 enum MailSessionStatus
 {
@@ -49,15 +52,15 @@ class MailSession
 {
 public:
 	MailSession() = delete;
-	MailSession(SOCKET& client_socket);
+	MailSession(SOCKET client_socket);
 
-	const SOCKET& GetSocket() const;
+	const SOCKET& get_client_socket() const;
 
 	int SendResponse(int response_type);
 	int Processes(char* buf);
 
 private:
-	int ProcessNotImplemented(bool arg);
+	int ProcessNotImplemented();
 	int ProcessHELO(char* buf);
 	int ProcessAUTH(char* buf);
 	int ProcessMAIL(char* buf);
