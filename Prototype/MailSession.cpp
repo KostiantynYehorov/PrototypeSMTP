@@ -25,8 +25,8 @@ std::string MailSession::CutAddress(char* buf)
 	std::string str_buf = buf;
 	std::string result = "";
 
-	size_t start_pos = str_buf.find("<", 0);
-	size_t end_pos = str_buf.find(">", 0);
+	size_t start_pos = str_buf.find('<', 0);
+	size_t end_pos = str_buf.find('>', 0);
 
 	for (size_t i = start_pos + 1; i < end_pos; i++)
 	{
@@ -41,7 +41,7 @@ std::string MailSession::CutSubject(char* buf)
 	std::string str_buf = buf;
 	std::string result = "";
 
-	size_t start_pos = str_buf.find(":", 0);
+	size_t start_pos = str_buf.find(':', 0);
 
 	for (size_t i = start_pos + 2; i < str_buf.size(); i++)
 	{
@@ -56,7 +56,7 @@ int MailSession::SendResponse(int response_type)
 	char buf[64];
 	ZeroMemory(&buf, sizeof(buf));
 
-	if (response_type == Responses::WELCOME)
+	if (response_type == Responses::WELCOME_TO_CLIENT)
 	{
 		strcpy(buf, "220 Welcome!\r\n");
 	}
@@ -66,9 +66,19 @@ int MailSession::SendResponse(int response_type)
 		strcpy(buf, "221 Service closing transmission channel\r\n");
 	}
 
+	else if (response_type == Responses::LOGIN_SUCCESS)
+	{
+		strcpy(buf, "235 Successfull login\r\n");
+	}
+
 	else if (response_type == Responses::OK)
 	{
 		strcpy(buf, "250 OK\r\n");
+	}
+
+	else if (response_type == Responses::LOGIN_RCV)
+	{
+		strcpy(buf, "334 Login has recieved\r\n");
 	}
 
 	else if (response_type == Responses::START_MAIL)
@@ -115,17 +125,6 @@ int MailSession::SendResponse(int response_type)
 int MailSession::Processes(char* buf)
 {
 
-	if (current_status == MailSessionStatus::DATA)
-	{
-		return SubProcessSubject(buf);
-	}
-
-	if (current_status == MailSessionStatus::SUBJECT)
-	{
-		return SubProcessEmail(buf);
-	}
-
-
 	if (_strnicmp(buf, "HELO", FIRST_FOUR_SYMBOLS) == 0)
 	{
 		return ProcessHELO(buf);
@@ -134,6 +133,21 @@ int MailSession::Processes(char* buf)
 	else if (_strnicmp(buf, "EHLO", FIRST_FOUR_SYMBOLS) == 0)
 	{
 		return ProcessHELO(buf);
+	}
+
+	else if (_strnicmp(buf, "AUTH", FIRST_FOUR_SYMBOLS) == 0)
+	{
+		return ProcessAUTH(buf);
+	}
+
+	else if (current_status == MailSessionStatus::LOGIN)
+	{
+		return ProcessAUTH(buf);
+	}
+
+	else if (current_status == MailSessionStatus::PASSWORD)
+	{
+		return ProcessAUTH(buf);
 	}
 
 	else if (_strnicmp(buf, "MAIL", FIRST_FOUR_SYMBOLS) == 0)
@@ -149,6 +163,16 @@ int MailSession::Processes(char* buf)
 	else if (_strnicmp(buf, "DATA", FIRST_FOUR_SYMBOLS) == 0)
 	{
 		return ProcessDATA(buf);
+	}
+
+	else if (current_status == MailSessionStatus::SUBJECT)
+	{
+		return SubProcessEmail(buf);
+	}
+
+	else if (current_status == MailSessionStatus::DATA)
+	{
+		return SubProcessSubject(buf);
 	}
 
 	else if (_strnicmp(buf, "QUIT", FIRST_FOUR_SYMBOLS) == 0)
@@ -189,16 +213,40 @@ int MailSession::ProcessHELO(char* buf)
 		return SendResponse(Responses::SYNTAX_ERROR);
 	}
 
-	current_status = MailSessionStatus::EHLO;
+	current_status = MailSessionStatus::AUTH;
 
 	return SendResponse(Responses::OK);
+}
+
+int MailSession::ProcessAUTH(char* buf)
+{
+	if (current_status == MailSessionStatus::AUTH)
+	{
+		current_status = MailSessionStatus::LOGIN;
+		return SendResponse(Responses::LOGIN_RCV);
+	}
+
+	if (current_status == MailSessionStatus::LOGIN)
+	{
+		return SubProcessLoginRecieve(buf);
+	}
+
+	else if (current_status == MailSessionStatus::PASSWORD)
+	{
+		return SubProcessPasswordRecieve(buf);
+	}
+
+	else
+	{
+		return SendResponse(Responses::BAD_SEQUENSE);
+	}
 }
 
 int MailSession::ProcessMAIL(char* buf)
 {
 	std::cout << "Received 'MAIL FROM'\n";
 
-	if (current_status != MailSessionStatus::EHLO)
+	if (current_status != MailSessionStatus::AUTH_SUCCESS)
 	{
 		return SendResponse(Responses::BAD_SEQUENSE);
 	}
@@ -259,20 +307,35 @@ int MailSession::ProcessDATA(char* buf)
 	return SendResponse(Responses::START_MAIL);
 }
 
+int MailSession::SubProcessLoginRecieve(char* buf)
+{
+	current_status = MailSessionStatus::PASSWORD;
+	return SendResponse(Responses::LOGIN_RCV);
+}
+
+int MailSession::SubProcessPasswordRecieve(char* buf)
+{
+	current_status = MailSessionStatus::AUTH_SUCCESS;
+	return SendResponse(Responses::LOGIN_SUCCESS);
+}
+
 int MailSession::SubProcessEmail(char* buf)
 {
 	std::string text = buf;
-	mail_info.set_text(text);
 
 	if (strstr(buf, SMTP_DATA_TERMINATOR))
 	{
+		int pos = text.find("\r\n", 0);
+		text = text.substr(0, pos);
+		mail_info.set_text(text);
+
 		std::cout << "Received DATA END\n";
 		current_status = MailSessionStatus::QUIT;
 
-		return SendResponse(Responses::OK);
+		return 1;
 	}
 
-	return SendResponse(Responses::OK);
+	return SendResponse(Responses::EMAIL_N_RECEIVED);
 }
 
 int MailSession::SubProcessSubject(char* buf)
@@ -287,6 +350,8 @@ int MailSession::SubProcessSubject(char* buf)
 
 	current_status = MailSessionStatus::SUBJECT;
 	mail_info.set_subject(subject);
+
+	Sleep(1);
 
 	return SendResponse(Responses::OK);
 }

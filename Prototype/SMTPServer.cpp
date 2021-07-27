@@ -24,7 +24,7 @@ void SMTPServer::AcceptConnections()
 		{
 			std::cout << "Accepted new connection. Now creating session thread...\n";
 			
-			//thread_pool->AddTask(WorkWithClient, client_socket);
+			/*thread_pool->AddTask(WorkWithClient, client_socket);*/
 			WorkWithClient(client_socket);
 		}
 	}
@@ -32,16 +32,16 @@ void SMTPServer::AcceptConnections()
 
 void SMTPServer::WorkWithClient(SOCKET client_socket)
 {
-	int len = 0;
-
 	MailSession mail_session(client_socket);
 	char buf[128];
 	ZeroMemory(&buf, sizeof(buf));
 
 	mail_session.SendResponse(220);
 
-	while (len = recv(mail_session.GetSocket(), (char*)&buf, sizeof(buf), 0))
+	while (true)
 	{
+		recv(mail_session.GetSocket(), (char*)&buf, sizeof(buf), 0);
+
 		if (221 == mail_session.Processes(buf))
 		{
 			std::cout << "End of work\n";
@@ -84,8 +84,7 @@ bool SMTPServer::SetSocketSettings()
 
 	server_info.sin_family = AF_INET;
 	server_info.sin_port = htons(25);
-	//ServerInfo.sin_addr = *(LPIN_ADDR)(gethostbyname("localhost")->h_addr_list[0]);
-	server_info.sin_addr.S_un.S_addr = inet_addr("192.168.0.106");
+	server_info.sin_addr = *(LPIN_ADDR)(gethostbyname("localhost")->h_addr_list[0]);
 
 	if (bind(server_socket, (sockaddr*)&server_info, sizeof(server_info)) == SOCKET_ERROR)
 	{

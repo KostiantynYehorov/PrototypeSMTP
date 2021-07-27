@@ -5,7 +5,7 @@
 #include <ws2tcpip.h>
 #include <string>
 
-#include "Mail.h"
+#include "MailInfo.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -14,12 +14,14 @@
 #define FIRST_FOUR_SYMBOLS 4
 #define FIRST_EIGHT_SYMBOLS 8
 
-//#define SMTP_DATA_TERMINATOR "."
-
 enum MailSessionStatus
 {
 	EMPTY,
 	EHLO,
+	AUTH,
+	LOGIN,
+	PASSWORD,
+	AUTH_SUCCESS,
 	MAIL_FROM, 
 	RCPT_TO,
 	DATA,
@@ -29,13 +31,16 @@ enum MailSessionStatus
 
 enum Responses
 {
-	WELCOME = 220,
+	WELCOME_TO_CLIENT = 220,
 	SERVICE_CLOSING,
+	LOGIN_SUCCESS = 235,
 	OK = 250,
+	LOGIN_RCV = 334,
 	START_MAIL = 354,
 	SYNTAX_ERROR = 501,
 	COMMAND_NOT_IMPLEMENTED,
 	BAD_SEQUENSE,
+	EMAIL_N_RECEIVED,
 	NO_USER = 550,
 	USER_NOT_LOCAL
 };
@@ -54,10 +59,13 @@ public:
 private:
 	int ProcessNotImplemented(bool arg);
 	int ProcessHELO(char* buf);
+	int ProcessAUTH(char* buf);
 	int ProcessMAIL(char* buf);
 	int ProcessRCPT(char* buf);
 	int ProcessDATA(char* buf);
 
+	int SubProcessLoginRecieve(char* buf);
+	int SubProcessPasswordRecieve(char* buf);
 	int SubProcessEmail(char* buf);
 	int SubProcessSubject(char* buf);
 
@@ -70,7 +78,7 @@ private:
 
 private:
 	SOCKET client_socket;
-	Mail mail_info;
+	MailInfo mail_info;
 	int current_status = MailSessionStatus::EMPTY;
 };
 

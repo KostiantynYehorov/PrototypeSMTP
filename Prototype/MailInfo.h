@@ -5,10 +5,10 @@
 #include <string>
 #include <fstream>
 
-class Mail
+class MailInfo
 {
 public:
-	Mail() = default;
+	MailInfo() = default;
 
 	void set_mail_from(std::string& mail_from);
 	void set_rcpt_to(std::string& rcpt_to);

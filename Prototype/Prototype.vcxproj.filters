@@ -24,7 +24,7 @@
     <ClCompile Include="MailSession.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Mail.cpp">
+    <ClCompile Include="MailInfo.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="ThreadPool.cpp">
@@ -38,7 +38,7 @@
     <ClInclude Include="MailSession.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Mail.h">
+    <ClInclude Include="MailInfo.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="ThreadPool.h">
